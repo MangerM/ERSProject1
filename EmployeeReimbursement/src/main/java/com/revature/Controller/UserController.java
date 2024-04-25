@@ -32,6 +32,24 @@ public class UserController {
         return ResponseEntity.ok(Users);
     }
 
+    @GetMapping("/Login")
+    public ResponseEntity<Object> getUserByUsernamePassword(@RequestBody String[] usernamePassword){
+        List<User> Users = UD.findAll();
+
+        for(User u : Users){
+            if(u.getUserName().equals(usernamePassword[0])){
+                if(u.getUserPass().equals(usernamePassword[1])) {
+                    return ResponseEntity.status(201).body(u);
+                }else{
+                    return ResponseEntity.status(404).body("Incorrect Password please try again.");
+                }
+            } else{
+                return ResponseEntity.status(404).body("No User found with the Username Provided "+ usernamePassword[0]);
+            }
+        }
+        return ResponseEntity.status(404).body("No Users found in Database");
+    }
+
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User newUser){
         User u = UD.save(newUser);
