@@ -14,6 +14,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping(value="/Users")
 @ResponseBody
+@CrossOrigin
 public class UserController {
 
     UserDao UD;
@@ -32,7 +33,7 @@ public class UserController {
         return ResponseEntity.ok(Users);
     }
 
-    @GetMapping("/Login")
+    @PostMapping("/Login")
     public ResponseEntity<Object> getUserByUsernamePassword(@RequestBody String[] usernamePassword){
         List<User> Users = UD.findAll();
 

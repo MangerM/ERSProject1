@@ -17,6 +17,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping(value="/Reimbursement")
+@CrossOrigin
 @ResponseBody
 public class ReimbursementController {
 
