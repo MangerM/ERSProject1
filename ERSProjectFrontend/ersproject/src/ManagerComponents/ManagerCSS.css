@@ -1,0 +1,11 @@
+.PrimaryButton{
+    width: 20%;
+    border-color: #02040F;
+    border-radius: 25px;
+    margin: 10px;
+}
+
+.PrimaryButton:hover{
+    cursor: pointer;
+    box-shadow: 0 0 50px 15px #cdd7dd;
+}

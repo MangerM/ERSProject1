@@ -1,7 +1,8 @@
 export interface ReimbursementInterface {
-    rID?:number
-    rDesc:String
-    rAmount:number
-    rStatus?:String
-    rUserID?:number
+    reimbID:number
+    reimbDesc:String
+    reimbAmount:number
+    reimbStatus:String
+    reimbUserID:number
+    reimbUserName:String
 }

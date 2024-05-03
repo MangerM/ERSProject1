@@ -3,8 +3,11 @@ package com.revature.Controller;
 
 import com.revature.DAOs.ReimbursementDao;
 import com.revature.DAOs.UserDao;
+import com.revature.Models.DTOs.incomingReimbursementDTO;
 import com.revature.Models.Reimbursement;
 import com.revature.Models.User;
+import com.revature.Services.ReimbursementService;
+import jakarta.servlet.http.HttpSession;
 import jakarta.websocket.server.PathParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,145 +20,121 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping(value="/Reimbursement")
-@CrossOrigin
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @ResponseBody
 public class ReimbursementController {
 
     ReimbursementDao RD;
     UserDao UD;
+    ReimbursementService RS;
 
     @Autowired
-    public ReimbursementController(ReimbursementDao RD, UserDao UD) {
+    public ReimbursementController(ReimbursementDao RD, UserDao UD, ReimbursementService RS) {
         this.RD = RD;
         this.UD = UD;
+        this.RS = RS;
     }
 
+    @GetMapping
+    public ResponseEntity<Object> getAllReimbursements(HttpSession session){
 
-    @GetMapping("/{userID}")
-    public ResponseEntity<Object> getAllReimbursements(@PathVariable int userID){
-
-        Optional<User> signedUser = UD.findById(userID);
-
-        List<Reimbursement> reimbursements = RD.findAll();
-        List<Reimbursement> ownedReimbursements = new ArrayList<>();
-
-        if(signedUser.isPresent()){
-            if(signedUser.get().getUserRole().equals("Manager")) {
-                return ResponseEntity.ok(reimbursements);
-            }else{
-                for(Reimbursement r : reimbursements){
-                    if(r.getAssignedUser() == signedUser.get()){
-                        ownedReimbursements.add(r);
-                    }
-                }
-                return ResponseEntity.ok(ownedReimbursements);
-            }
+        if(session.getAttribute("userID")== null){
+            return ResponseEntity.status(401).body("You must be logged in to view reimbursements");
         }
 
-        //This response should never return since only signed in users can access the reimbursement information.
-        return ResponseEntity.status(404).body("Cannot fetch reimbursements if non valid user.");
+        Optional<User> u = UD.findById((int)session.getAttribute("userID"));
+
+        if(u.isEmpty()){
+            return ResponseEntity.status(401).body("Signed in user does not exist");
+            //This should never happen
+        }
+
+        User person = u.get();
+
+        if(person.getUserRole().equals("Manager")){
+            return ResponseEntity.ok(RS.getAllReimbursements());
+        }else{
+            return ResponseEntity.ok(RS.getAllReimbursementsByUser(person.getUserID()));
+        }
     }
 
-    @GetMapping("/Pending/{userID}")
-    public ResponseEntity<Object> getAllPendingReimbursements(@PathVariable int userID){
+    @GetMapping("/Pending")
+    public ResponseEntity<Object> getAllPendingReimbursements(HttpSession session){
 
-        Optional<User> signedUser = UD.findById(userID);
 
-        List<Reimbursement> reimbursements = RD.findAll();
-        List<Reimbursement> ownedReimbursements = new ArrayList<>();
-        List<Reimbursement> pendingReimbursements = new ArrayList<>();
-
-        for(Reimbursement r : reimbursements){
-            if(r.getReimbStatus().equals("Pending")){
-                pendingReimbursements.add(r);
-            }
+        if(session.getAttribute("userID")== null){
+            return ResponseEntity.status(401).body("You must be logged in to view reimbursements");
         }
 
-        if(signedUser.isPresent()){
-            if(signedUser.get().getUserRole().equals("Manager")) {
-                return ResponseEntity.ok(pendingReimbursements);
-            }else{
-                for(Reimbursement r : pendingReimbursements){
-                    if(r.getAssignedUser() == signedUser.get()){
-                        ownedReimbursements.add(r);
-                    }
-                }
-                return ResponseEntity.ok(ownedReimbursements);
-            }
+        Optional<User> u = UD.findById((int)session.getAttribute("userID"));
+
+        if(u.isEmpty()){
+            return ResponseEntity.status(401).body("Signed in user does not exist");
+            //This should never happen
         }
 
-        //This response should never return since only signed in users can access the reimbursement information.
-        return ResponseEntity.status(404).body("Cannot fetch reimbursements if non valid user.");
+        User person = u.get();
+
+        if(person.getUserRole().equals("Manager")){
+            return ResponseEntity.ok(RS.getAllReimbursementsByStatus("Pending"));
+        }else{
+            return ResponseEntity.ok(RS.getAllReimbursementsByUserByStatus(person.getUserID(), "Pending"));
+        }
     }
 
 
 
-    //Need 2 patch requests, one to update desc one to resolve and change status
-    //Need 2 post requests, one to create a brand new request, one to copy an existing request
+    @PostMapping
+    public ResponseEntity<Object> newReimbursement(@RequestBody incomingReimbursementDTO submittedReimbursement, HttpSession session){
 
-    @PostMapping("/{UserID}")
-    public ResponseEntity<Object> newReimbursement(@RequestBody Reimbursement submittedReimbursement, @PathVariable int UserID){
-
-        Optional<User> signedUser = UD.findById(UserID);
-
-        if(signedUser.isEmpty()){
-            return  ResponseEntity.status(404).body("Invalid User ID.");
+        if(session.getAttribute("userID")== null){
+            return ResponseEntity.status(401).body("You must be logged in to submit reimbursements");
         }
-        submittedReimbursement.setAssignedUser(signedUser.get());
-        RD.save(submittedReimbursement);
-        return ResponseEntity.accepted().body(submittedReimbursement);
+
+        return ResponseEntity.ok(RS.newReimbursement((int)session.getAttribute("userID"),submittedReimbursement));
+
     }
 
     @PostMapping("/Renew/{reimbursementID}")
-    public ResponseEntity<Object> cloneReimbursement(@PathVariable int reimbursementID){
-        Optional<Reimbursement> existingReimbursement = RD.findById(reimbursementID);
-
-        if(existingReimbursement.isEmpty()){
-            return ResponseEntity.status(404).body("Invalid ReimbursementID");
+    public ResponseEntity<Object> cloneReimbursement(@PathVariable int reimbursementID, HttpSession session){
+        if(session.getAttribute("userID")== null){
+            return ResponseEntity.status(401).body("You must be logged in to clone reimbursements");
         }
 
-        Reimbursement oldReimbursement = existingReimbursement.get();
-        Reimbursement newReimbursement = new Reimbursement();
-        newReimbursement.setReimbDesc(oldReimbursement.getReimbDesc());
-        newReimbursement.setReimbStatus("Pending");
-        newReimbursement.setAssignedUser(oldReimbursement.getAssignedUser());
-        newReimbursement.setReimbAmount(oldReimbursement.getReimbAmount());
-        Reimbursement newReimbursement2 = RD.save(newReimbursement);
+        try{
+            return ResponseEntity.ok(RS.cloneReimbursement((int)session.getAttribute("userID"),reimbursementID));
+        }catch(Exception e){
+            return ResponseEntity.status(401).body(e.getMessage());
+        }
 
-        return ResponseEntity.status(201).body(newReimbursement2);
     }
 
     @PatchMapping("/{ReimbursementID}")
-    public ResponseEntity<Object> updateDesc(@PathVariable int ReimbursementID, @RequestBody String newDesc){
-        Optional<Reimbursement> existingReimbursement = RD.findById(ReimbursementID);
+    public ResponseEntity<Object> updateDesc(@PathVariable int ReimbursementID, @RequestBody String newDesc, HttpSession session){
 
-        if(existingReimbursement.isEmpty()){
-            return ResponseEntity.status(404).body("Invalid ReimbursementID");
+
+        if(session.getAttribute("userID")== null){
+            return ResponseEntity.status(401).body("You must be logged in to modify reimbursements");
         }
-        Reimbursement oldReimbursement = existingReimbursement.get();
-        if(!oldReimbursement.getReimbStatus().equals("Pending")){
-            return ResponseEntity.status(404).body("Cannot change description of non-pending request.");
+
+        try{
+            return ResponseEntity.ok(RS.updateDesc((int)session.getAttribute("userID"), ReimbursementID, newDesc));
+        }catch(Exception e){
+            return ResponseEntity.status(401).body(e.getMessage());
         }
-        oldReimbursement.setReimbDesc(newDesc);
-        Reimbursement newReimbursement = RD.save(oldReimbursement);
-        return ResponseEntity.status(201).body(newReimbursement);
     }
 
     @PatchMapping("/Resolve/{ReimbursementID}")
-    public ResponseEntity<Object> resolveReimbursement(@PathVariable int ReimbursementID, @RequestBody String newStatus){
-        Optional<Reimbursement> existingReimbursement = RD.findById(ReimbursementID);
+    public ResponseEntity<Object> resolveReimbursement(@PathVariable int ReimbursementID, @RequestBody String newStatus, HttpSession session){
 
-        if(existingReimbursement.isEmpty()){
-            return ResponseEntity.status(404).body("Invalid ReimbursementID");
-        }
-        Reimbursement oldReimbursement = existingReimbursement.get();
-
-        if(!oldReimbursement.getReimbStatus().equals("Pending")){
-            return ResponseEntity.status(404).body("Reimbursement not pending resolution");
+        if(session.getAttribute("userID")== null){
+            return ResponseEntity.status(401).body("You must be logged in to modify reimbursements");
         }
 
-        oldReimbursement.setReimbStatus(newStatus);
-        Reimbursement newReimbursement = RD.save(oldReimbursement);
-        return ResponseEntity.status(201).body(newReimbursement);
+        try{
+            return ResponseEntity.ok(RS.resolve((int)session.getAttribute("userID"), ReimbursementID, newStatus));
+        }catch(Exception e){
+            return ResponseEntity.status(401).body(e.getMessage());
+        }
     }
 }

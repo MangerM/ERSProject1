@@ -1,0 +1,25 @@
+td{
+    margin: 10px;
+    padding: 10px;
+}
+
+tr{
+    border-bottom: 5px;
+    border-bottom-style: solid;
+}
+
+table{
+    border-collapse: collapse;
+    margin-left: auto;
+    margin-right: auto;
+}
+th{
+    margin: 10px;
+    padding: 10px;
+}
+
+ .tinySubButton{
+    border-color: #02040F;
+        border-radius: 25px;
+        margin: 10px;
+ }

@@ -2,7 +2,13 @@ package com.revature.Controller;
 
 
 import com.revature.DAOs.UserDao;
+import com.revature.Models.DTOs.incomingUserDTO;
+import com.revature.Models.DTOs.incomingUserLoginDTO;
+import com.revature.Models.DTOs.outgoingUserDTO;
+import com.revature.Models.DTOs.outgoingUserLimitedDTO;
 import com.revature.Models.User;
+import com.revature.Services.UserService;
+import jakarta.servlet.http.HttpSession;
 import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,76 +20,90 @@ import java.util.Optional;
 @RestController
 @RequestMapping(value="/Users")
 @ResponseBody
-@CrossOrigin
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class UserController {
 
     UserDao UD;
+    UserService US;
 
     @Autowired
-    public UserController(UserDao UD) {
+    public UserController(UserDao UD, UserService US) {
         this.UD = UD;
+        this.US = US;
     }
 
-
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers(){
+    public ResponseEntity<?> getAllUsers(HttpSession session){
 
-        List<User> Users = UD.findAll();
+        if(session.getAttribute("userID")== null){
+            return ResponseEntity.status(401).body("You must be logged in to attempt to view users");
+        }
 
-        return ResponseEntity.ok(Users);
+        try{
+            return ResponseEntity.ok(US.fetchAllUsers((int)session.getAttribute("userID")));
+        }catch(Exception e){
+            return ResponseEntity.status(400).body(e.getMessage());
+        }
+
     }
 
     @PostMapping("/Login")
-    public ResponseEntity<Object> getUserByUsernamePassword(@RequestBody String[] usernamePassword){
-        List<User> Users = UD.findAll();
+    public ResponseEntity<Object> getUserByUsernamePassword(@RequestBody incomingUserLoginDTO incoming, HttpSession session){
+        Optional<User> optionalUser = US.loginUser(incoming);
 
-        for(User u : Users){
-            if(u.getUserName().equals(usernamePassword[0])){
-                if(u.getUserPass().equals(usernamePassword[1])) {
-                    return ResponseEntity.status(201).body(u);
-                }else{
-                    return ResponseEntity.status(404).body("Incorrect Password please try again.");
-                }
-            } else{
-                return ResponseEntity.status(404).body("No User found with the Username Provided "+ usernamePassword[0]);
-            }
+        if(optionalUser.isEmpty()){
+            return ResponseEntity.status(401).body("Login Failed");
         }
-        return ResponseEntity.status(404).body("No Users found in Database");
+        User u = optionalUser.get();
+
+        session.setAttribute("userID", u.getUserID());
+        //Don't have role here but here's how it would look
+        //session.setAttribute("userRole", u.getUserRole());
+
+        return ResponseEntity.ok(new outgoingUserLimitedDTO(u.getUserName(), u.getUserRole()));
     }
 
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User newUser){
-        User u = UD.save(newUser);
-        return ResponseEntity.status(201).body(u);
+    public ResponseEntity<?> createUser(@RequestBody incomingUserDTO newUser){
+
+        try{
+            US.createUser(newUser);
+            return ResponseEntity.status(201).body(newUser.getUserName() + " was created!");
+        }catch(Exception e){
+            return ResponseEntity.status(400).body(e.getMessage());
+        }
+
     }
 
 
     @DeleteMapping("/{UserID}")
-    public ResponseEntity<Object> deleteUser(@PathVariable int UserID){
-        Optional<User> returnedUser = UD.findById(UserID);
+    public ResponseEntity<Object> deleteUser(@PathVariable int UserID, HttpSession session){
 
-        if(returnedUser.isEmpty()){
-            return ResponseEntity.status(404).body("No User found with the Id Provided "+ UserID);
+        if(session.getAttribute("userID")== null){
+            return ResponseEntity.status(401).body("You must be logged in to attempt to fire users");
         }
 
-        UD.delete(returnedUser.get());
-        return  ResponseEntity.accepted().body("User " + UserID + " has ben deleted.");
+        try{
+            return ResponseEntity.ok(
+                    US.fireUser(UserID, (int)session.getAttribute("userID")));
+        }catch(Exception e){
+            return ResponseEntity.status(400).body(e.getMessage());
+        }
     }
 
 
     @PatchMapping("/Promote/{UserID}")
-    public ResponseEntity<Object> promoteUser(@PathVariable int UserID, @RequestBody String newRole){
-        Optional<User> returnedUser = UD.findById(UserID);
+    public ResponseEntity<Object> promoteUser(@PathVariable int UserID, @RequestBody String newRole, HttpSession session){
 
-        if(returnedUser.isEmpty()){
-            return ResponseEntity.status(404).body("No user with ID " + UserID + " found.");
+        if(session.getAttribute("userID")== null){
+            return ResponseEntity.status(401).body("You must be logged in to promote users");
         }
 
-        User u = returnedUser.get();
-        u.setUserRole(newRole);
-        UD.save(u);
-
-        return  ResponseEntity.ok("User " + UserID + " promoted to " + newRole);
+        try{
+            return ResponseEntity.ok(
+                    US.promoteUser(UserID, newRole, (int)session.getAttribute("userID")));
+        }catch(Exception e){
+            return ResponseEntity.status(400).body(e.getMessage());
+        }
     }
-
 }

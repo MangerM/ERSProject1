@@ -1,8 +1,7 @@
-export interface UserInterface {
-    UserID:number
+export interface NewUserInterface {
     firstName:String
     lastName:String
     userName:String
-    userRole:String
+    userPass:String
     userEmail:String
 }

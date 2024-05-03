@@ -1,18 +1,25 @@
 import React from 'react';
 import logo from './logo.svg';
 import './App.css';
-import { BrowserRouter, Route, RouterProvider, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, RouterProvider, Routes, useNavigate } from 'react-router-dom';
 import { LoginComponent } from './GenericComponents/LoginComponent';
+import { ManagerMainComponent } from './ManagerComponents/ManagerMainComponent';
+import { EmployeeMainComponent } from './EmployeeComponents/EmployeeMainComponent';
+import { SplashComponent } from './GenericComponents/SplashComponent';
 
 function App() {
+
+  
+
   return (
   <div className='MainBody'>
 
     <div className='MainHeader'>
-      <h3 id='PageTitle'>Employee Reimbursement System</h3>
       <BrowserRouter>
         <Routes>
-          <Route path='' element={<LoginComponent />}></Route>
+          <Route path='' element={<SplashComponent />}></Route>
+          <Route path='/Managers' element={<ManagerMainComponent />}></Route>
+          <Route path='/Employees' element={<EmployeeMainComponent />}></Route>
         </Routes>
       </BrowserRouter>
     </div>

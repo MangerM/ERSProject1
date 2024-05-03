@@ -9,3 +9,69 @@ body{
 #PageTitle{
   text-align:center;
 }
+
+.MainContentDiv{
+  text-align: center;
+  width: 100%;
+}
+
+.LogoutButton{
+  float:right;
+  border-color: #02040F;
+  border-radius: 25px;
+  padding: 15px;
+  margin: 10px;
+}
+
+.PrimaryButton{
+  background-color: gray;
+    border: none;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+}
+
+input{
+  height: 20px;
+    margin-bottom: 10px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #F4F7F5;
+    width: 25%;
+    border-radius: 25px;
+    padding: 8px;
+    padding-left: 15px;
+}
+
+
+
+textarea{
+  height: 20px;
+    margin-bottom: 10px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #F4F7F5;
+    width: 25%;
+    border-radius: 25px;
+    padding: 8px;
+    padding-left: 15px;
+}
+
+ .ManagerAction{
+    margin:0px;
+    width: 30px;
+ }
+
+.ManagerSubmit{
+  border-color: #02040F;
+    border-radius: 25px;
+    margin: 20px;
+    padding: 10px;
+}
+
+.ManagerDiv{
+  width: fit-content;
+  display: inline-block;
+}

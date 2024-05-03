@@ -87,6 +87,13 @@ public class Reimbursement {
         this.assignedUser = assignedUser;
     }
 
+    public Reimbursement(String reimbDesc, int reimbAmount, String reimbStatus, User assignedUser) {
+        this.reimbDesc = reimbDesc;
+        this.reimbAmount = reimbAmount;
+        this.reimbStatus = reimbStatus;
+        this.assignedUser = assignedUser;
+    }
+
     //------------------To string-----------------------------------
 
     @Override
